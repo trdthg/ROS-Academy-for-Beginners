@@ -1,0 +1,68 @@
+[workspace]
+name = "ros-academy-for-beginners-ros2"
+version = "0.1.0"
+description = "ROS 2 migration workspace for ROS-Academy-for-Beginners on Windows using Pixi"
+authors = ["ROS-Academy-for-Beginners contributors"]
+channels = ["robostack-humble", "conda-forge"]
+platforms = ["win-64"]
+
+[activation]
+scripts = ["scripts/pixi-ros2-activate.bat"]
+
+[dependencies]
+ros-humble-desktop = "*"
+ros-humble-turtlesim = "*"
+ros-humble-joint-state-publisher = "*"
+ros-humble-joint-state-publisher-gui = "*"
+ros-humble-xacro = "*"
+colcon-common-extensions = "*"
+compilers = "*"
+pkg-config = "*"
+cmake = "<4"
+ninja = "*"
+
+[tasks]
+doctor = "ros2 doctor --report"
+pkg-list = "ros2 pkg list"
+interface-list = "ros2 interface list"
+msg-point-show = "ros2 interface show msgs_demo_interfaces/msg/Point"
+srv-add-two-ints-show = "ros2 interface show msgs_demo_interfaces/srv/AddTwoInts"
+action-move-base-show = "ros2 interface show msgs_demo_interfaces/action/MoveBase"
+turtlesim = "ros2 run turtlesim turtlesim_node"
+teleop = "ros2 run turtlesim turtle_teleop_key"
+build = { cmd = "colcon build --merge-install --symlink-install", cwd = "ros2_ws" }
+test = { cmd = "colcon test --merge-install --event-handlers console_direct+ --return-code-on-test-failure", cwd = "ros2_ws", depends-on = ["build"] }
+test-result = { cmd = "colcon test-result --all --verbose", cwd = "ros2_ws" }
+create-py-demo = "ros2 pkg create --build-type ament_python --destination-directory ros2_ws/src --node-name demo_node demo_py_pkg"
+create-cpp-demo = "ros2 pkg create --build-type ament_cmake --destination-directory ros2_ws/src --node-name demo_cpp_node demo_cpp_pkg"
+topic-cpp-talker = "ros2 run topic_demo_cpp talker"
+topic-cpp-listener = "ros2 run topic_demo_cpp listener"
+topic-py-talker = "ros2 run topic_demo_py pytalker"
+topic-py-listener = "ros2 run topic_demo_py pylistener"
+service-cpp-server = "ros2 run service_demo_cpp server"
+service-cpp-client = "ros2 run service_demo_cpp client"
+service-py-server = "ros2 run service_demo_py server_demo"
+service-py-client = "ros2 run service_demo_py client_demo"
+action-cpp-server = "ros2 run action_demo_cpp dishes_server"
+action-cpp-client = "ros2 run action_demo_cpp dishes_client"
+action-py-server = "ros2 run action_demo_py dishes_server"
+action-py-client = "ros2 run action_demo_py dishes_client"
+param-cpp = "ros2 run param_demo_cpp param_demo_cpp_node"
+param-py = "ros2 run param_demo_py param_demo"
+name-demo = "ros2 launch name_demo_cpp demo.launch.py"
+tf-cpp-euler-to-quaternion = "ros2 run tf_demo_cpp euler_to_quaternion"
+tf-cpp-quaternion-to-euler = "ros2 run tf_demo_cpp quaternion_to_euler"
+tf-cpp-coordinate = "ros2 run tf_demo_cpp coordinate_transformation"
+tf-cpp-broadcaster = "ros2 run tf_demo_cpp tf_broadcaster"
+tf-cpp-listener = "ros2 run tf_demo_cpp tf_listener"
+tf-py-coordinate = "ros2 run tf_demo_py coordinate_transformation"
+tf-py-broadcaster = "ros2 run tf_demo_py py_tf_broadcaster"
+tf-py-listener = "ros2 run tf_demo_py py_tf_listener"
+urdf-link-joint = "ros2 launch urdf_demo_ros2 display_urdf_link_joint.launch.py"
+urdf-link-position = "ros2 launch urdf_demo_ros2 display_urdf_link_position.launch.py"
+urdf-color-geometry = "ros2 launch urdf_demo_ros2 display_urdf_color_geometry.launch.py"
+urdf-xacro = "ros2 launch urdf_demo_ros2 display_xacro.launch.py"
+urdf-link-joint-headless = "ros2 launch urdf_demo_ros2 display_urdf_link_joint.launch.py use_gui:=false use_rviz:=false"
+urdf-link-position-headless = "ros2 launch urdf_demo_ros2 display_urdf_link_position.launch.py use_gui:=false use_rviz:=false"
+urdf-color-geometry-headless = "ros2 launch urdf_demo_ros2 display_urdf_color_geometry.launch.py use_gui:=false use_rviz:=false"
+urdf-xacro-headless = "ros2 launch urdf_demo_ros2 display_xacro.launch.py use_gui:=false use_rviz:=false"
