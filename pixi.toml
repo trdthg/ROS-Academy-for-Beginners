@@ -4,9 +4,12 @@ version = "0.1.0"
 description = "ROS 2 migration workspace for ROS-Academy-for-Beginners on Windows using Pixi"
 authors = ["ROS-Academy-for-Beginners contributors"]
 channels = ["robostack-humble", "conda-forge"]
-platforms = ["win-64"]
+platforms = ["win-64", "linux-64"]
 
 [activation]
+scripts = ["scripts/pixi-ros2-activate.sh"]
+
+[target.win-64.activation]
 scripts = ["scripts/pixi-ros2-activate.bat"]
 
 [dependencies]
@@ -20,6 +23,19 @@ compilers = "*"
 pkg-config = "*"
 cmake = "<4"
 ninja = "*"
+ros-humble-nav2-bringup = ">=1.1.20,<2"
+ros-humble-nav2-map-server = ">=1.1.20,<2"
+ros-humble-nav2-amcl = ">=1.1.20,<2"
+ros-humble-nav2-rviz-plugins = ">=1.1.20,<2"
+ros-humble-slam-toolbox = ">=2.6.8,<3"
+ros-humble-twist-mux = ">=4.3.0,<5"
+ros-humble-ros2-control = ">=2.53.1,<3"
+ros-humble-ros2-controllers = ">=2.52.0,<3"
+ros-humble-ros2-control-test-assets = ">=2.53.1,<3"
+
+[target.linux-64.dependencies]
+ros-humble-ros-gz = ">=0.244.22,<0.245"
+ros-humble-gz-ros2-control = ">=0.7.18,<0.8"
 
 [tasks]
 doctor = "ros2 doctor --report"
@@ -58,6 +74,30 @@ tf-cpp-listener = "ros2 run tf_demo_cpp tf_listener"
 tf-py-coordinate = "ros2 run tf_demo_py coordinate_transformation"
 tf-py-broadcaster = "ros2 run tf_demo_py py_tf_broadcaster"
 tf-py-listener = "ros2 run tf_demo_py py_tf_listener"
+tf-follower = "ros2 run tf_follower_ros2 tf_follower"
+tf-follower-launch = "ros2 launch tf_follower_ros2 tf_follower.launch.py"
+tf-follower-demo = "ros2 launch tf_follower_ros2 tf_follower_demo.launch.py"
+robot-sim-demo = "ros2 launch robot_sim_demo_ros2 sim_bringup.launch.py"
+robot-sim-demo-headless = "ros2 launch robot_sim_demo_ros2 sim_bringup.launch.py use_rviz:=false"
+robot-sim-demo-gazebo = "ros2 launch robot_sim_demo_ros2 sim_bringup.launch.py use_gazebo:=true gz_headless:=false spawn_x:=5.0 spawn_y:=0.0 spawn_z:=0.25 spawn_yaw:=-2.0"
+robot-sim-ground-test = "ros2 launch robot_sim_demo_ros2 sim_bringup.launch.py use_gazebo:=true gz_headless:=false world:=$(ros2 pkg prefix robot_sim_demo_ros2)/share/robot_sim_demo_ros2/worlds/ground_test.sdf gui_config:=$(ros2 pkg prefix robot_sim_demo_ros2)/share/robot_sim_demo_ros2/gui/ground.gui.config"
+robot-sim-demo-gazebo-headless = "ros2 launch robot_sim_demo_ros2 sim_bringup.launch.py use_rviz:=false use_gazebo:=true gz_headless:=true world:=$(ros2 pkg prefix robot_sim_demo_ros2)/share/robot_sim_demo_ros2/worlds/empty.sdf"
+nav2-demo = "ros2 launch navigation_sim_demo_ros2 nav2_demo.launch.py"
+nav2-demo-headless = "ros2 launch navigation_sim_demo_ros2 nav2_demo.launch.py use_rviz:=false"
+nav2-demo-gazebo = "ros2 launch navigation_sim_demo_ros2 nav2_demo.launch.py use_rviz:=true use_gazebo:=true gz_headless:=false use_sim_time:=true"
+nav2-demo-gazebo-headless = "ros2 launch navigation_sim_demo_ros2 nav2_demo.launch.py use_rviz:=false use_gazebo:=true gz_headless:=true use_sim_time:=true world:=$(ros2 pkg prefix robot_sim_demo_ros2)/share/robot_sim_demo_ros2/worlds/empty.sdf spawn_x:=0.0 spawn_y:=0.0 spawn_z:=0.25 spawn_yaw:=0.0"
+nav2-goal-check = "ros2 run navigation_sim_demo_ros2 nav_goal_runner"
+nav2-goal-check-gazebo = "ros2 run navigation_sim_demo_ros2 nav_goal_runner --ros-args -p use_sim_time:=true"
+slam-demo = "ros2 launch slam_sim_demo_ros2 slam_demo.launch.py"
+slam-demo-headless = "ros2 launch slam_sim_demo_ros2 slam_demo.launch.py use_rviz:=false"
+slam-demo-gazebo = "ros2 launch slam_sim_demo_ros2 slam_demo.launch.py use_rviz:=true use_gazebo:=true gz_headless:=false use_sim_time:=true"
+slam-demo-gazebo-headless = "ros2 launch slam_sim_demo_ros2 slam_demo.launch.py use_rviz:=false use_gazebo:=true gz_headless:=true use_sim_time:=true world:=$(ros2 pkg prefix robot_sim_demo_ros2)/share/robot_sim_demo_ros2/worlds/empty.sdf"
+slam-map-check = "ros2 run slam_sim_demo_ros2 slam_map_runner"
+slam-map-check-gazebo = "ros2 run slam_sim_demo_ros2 slam_map_runner --ros-args -p use_sim_time:=true"
+slam-save-reload-check = "ros2 run slam_sim_demo_ros2 slam_save_reload_runner"
+slam-save-reload-check-gazebo = "ros2 run slam_sim_demo_ros2 slam_save_reload_runner --ros-args -p use_sim_time:=true"
+gazebo-regression = "bash scripts/gazebo-regression.sh"
+phase2-acceptance = "bash scripts/gazebo-regression.sh"
 urdf-link-joint = "ros2 launch urdf_demo_ros2 display_urdf_link_joint.launch.py"
 urdf-link-position = "ros2 launch urdf_demo_ros2 display_urdf_link_position.launch.py"
 urdf-color-geometry = "ros2 launch urdf_demo_ros2 display_urdf_color_geometry.launch.py"

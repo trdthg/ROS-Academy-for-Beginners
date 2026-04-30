@@ -17,8 +17,8 @@ public:
 
     RCLCPP_INFO(get_logger(), "fully qualified node name: %s", get_fully_qualified_name());
     RCLCPP_INFO(get_logger(), "namespace: %s", get_namespace());
-    RCLCPP_INFO(get_logger(), "serial = %d", serial);
-    RCLCPP_INFO(get_logger(), "global_serial = %d", global_serial);
+    RCLCPP_INFO_STREAM(get_logger(), "serial = " << serial);
+    RCLCPP_INFO_STREAM(get_logger(), "global_serial = " << global_serial);
   }
 };
 

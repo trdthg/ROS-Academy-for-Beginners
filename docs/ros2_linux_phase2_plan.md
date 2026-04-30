@@ -74,6 +74,16 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - `navigation` 和 `slam` 的教学价值高于仿真底座重构
 - `robot_sim_demo` 最重，放到最后更稳
 
+当前实施偏移（2026-04-29）：
+
+- 为了尽快打通 Nav2 和 SLAM 的真实输入链路，代码实现上已经先拆出一个最小 `robot_sim_demo_ros2`
+- 这个最小底座现在已经承担公共仿真接口，并稳定提供 `/cmd_vel`、`/odom`、`/scan`、`/tf`
+- `navigation_sim_demo_ros2` 和 `slam_sim_demo_ros2` 都已经基于这套最小底座工作
+- 文档里的“最后重建 `robot_sim_demo`”仍然成立，但该阶段现在收敛为：
+  - 先把当前最小底座升级到 `ros2_control + twist_mux`
+  - 再把这条已跑通的控制与传感器链接到新版 Gazebo / `ros_gz`
+  - 而不是等到那时才第一次开始做仿真接口
+
 ## 分阶段任务
 
 ### 阶段 A：Linux 基线
@@ -91,6 +101,14 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 
 - Linux 下能成功构建当前 `ros2_ws/`
 - 第一阶段包不回归
+
+当前状态（2026-04-29）：
+
+- 已为 `pixi.toml` 增加 `linux-64` 平台，并补充 `scripts/pixi-ros2-activate.sh`
+- 在当前 Linux 主机上已完成一次 `pixi install`
+- `pixi run build` 已通过，当前 `ros2_ws/` 的 16 个 ROS2 包全部构建成功
+- `pixi run test` 已通过，现有 Python smoke tests 在 Linux 下可正常执行
+- `pixi run test-result` 仍显示 `0 tests`，这是当前 `unittest + console_direct` 输出方式导致的统计限制，不作为 gate
 
 ### 阶段 B：`tf_follower`
 
@@ -114,6 +132,14 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - 能连续输出跟随控制
 - 节点停止时能正确发零速
 
+当前状态（2026-04-29）：
+
+- 已新增 `ros2_ws/src/tf_follower_ros2`
+- 已将 ROS1 `py_tf_follower.py` 迁为 `rclpy + tf2_ros` 版本
+- 已补最小 launch 入口与纯 Python 控制逻辑测试
+- 已补动态假 TF broadcaster demo，可在不接 Gazebo 的情况下观察 `/mybot_cmd_vel` 持续变化
+- 当前范围仍是“纯跟随控制逻辑”，尚未重新接入 Gazebo / `robot_sim_demo`
+
 ### 阶段 C：`navigation_sim_demo -> Nav2`
 
 目标：把 ROS1 导航演示重写成 ROS2 Nav2 教学版。
@@ -135,6 +161,42 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - 初始位姿可设置
 - 2D Goal 能执行
 - 导航结果在 RViz 中可观察
+
+当前状态（2026-04-29）：
+
+- 已新增 `ros2_ws/src/navigation_sim_demo_ros2`
+- 已将旧 `slam_sim_demo/maps/Software_Museum.{yaml,pgm}` 复制进新包，作为已知地图输入
+- 已通过 Pixi 增加 Nav2 依赖：
+  - `ros-humble-nav2-bringup`
+  - `ros-humble-nav2-map-server`
+  - `ros-humble-nav2-amcl`
+  - `ros-humble-nav2-rviz-plugins`
+- 已新增 `nav2_demo.launch.py`
+  - 自动拉起 `robot_sim_demo_ros2`
+  - 直接拉起 `nav2_map_server + nav2_amcl + Nav2 navigation stack`
+  - 使用 `navigation_sim_demo_ros2/nav2_lifecycle_runner.py` 自管 lifecycle 顺序
+  - 已补 `use_gazebo` / `gz_headless` 开关，可切到新版 Gazebo 路径
+  - 可选启动导航 RViz
+- `pixi run nav2-demo-headless` 已验证：
+  - 地图可加载
+  - 初始位姿可注入 AMCL
+  - 自定义 lifecycle bringup 会输出 `nav2-stack-active`
+- `pixi run nav2-goal-check` 已验证：
+  - `BasicNavigator` 可发送 `NavigateToPose`
+  - 机器人 `/odom` 会在目标发送后发生变化
+  - 当前闭环检查会输出 `navigation-motion-detected`
+- `pixi run nav2-demo-gazebo-headless` 已验证：
+  - Gazebo 场景下地图加载、AMCL 初始位姿注入、自定义 lifecycle bringup 都可完成
+  - 后台会输出 `nav2-stack-active`
+- `pixi run nav2-goal-check-gazebo` 已验证：
+  - Gazebo 场景下 `BasicNavigator` 可正常发出目标
+  - 机器人会产生可观测位移，当前闭环检查输出 `navigation-motion-detected`
+
+当前缺口：
+
+- 主要链路已经可用，但启动初期仍可能看到少量 AMCL 初始位姿时间外推告警
+- `nav2-goal-check` 在检测到位移后会主动取消 goal，因此后台仍可能出现一次 Nav2 cancel / halt 相关日志
+- 目前验证的是“目标发送后确实发生导航位移”，还没有补更完整的自动化验收，例如最终位姿误差门限
 
 ### 阶段 D：`slam_sim_demo -> slam_toolbox`
 
@@ -161,6 +223,38 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - 地图可持续增长
 - 地图可保存并复用
 
+当前状态（2026-04-29）：
+
+- 已新增 `ros2_ws/src/slam_sim_demo_ros2`
+- 已采用 `slam_toolbox` 的 `online_async_launch.py` 作为主线
+- 已新增 `slam_demo.launch.py`
+  - 自动拉起 `robot_sim_demo_ros2`
+  - 拉起 `async_slam_toolbox_node`
+  - 已补 `use_gazebo` / `gz_headless` 开关，可切到新版 Gazebo 路径
+  - 可选启动新的 SLAM RViz 配置
+- 已新增 `slam_toolbox_params.yaml`
+  - 对当前最小仿真的 `/scan`、`/odom`、`base_footprint`、`odom`、`map` 帧命名完成适配
+  - 降低了 `minimum_travel_distance` / `minimum_travel_heading`，让教学 demo 更快出现地图更新
+- 已新增 `slam_map_runner.py`
+  - 自动发布一段 `/cmd_vel` 运动序列
+  - 监听 `/map`
+  - 检查地图已从初始状态继续增长
+- 已新增 `slam_save_reload_runner.py`
+  - 调用 `nav2_map_server/map_saver_cli` 从 `/map` 保存 `yaml + pgm`
+  - 再临时拉起 `map_server` 重载刚保存的 YAML
+  - 检查可从 `/reloaded_map` 收到重载后的 OccupancyGrid
+- 已验证：
+  - `pixi run slam-demo-headless` 可正常拉起 `slam_toolbox`
+  - `pixi run slam-map-check` 当前会输出 `slam-map-updated`
+  - `pixi run slam-demo-gazebo-headless` 可在 Gazebo 场景下正常拉起 `slam_toolbox`
+  - `pixi run slam-map-check-gazebo` 当前会输出 `slam-map-updated`
+  - `pixi run slam-save-reload-check` 当前会输出 `slam-map-saved-and-reloaded`
+  - `pixi run slam-save-reload-check-gazebo` 当前会输出 `slam-map-saved-and-reloaded`
+
+当前缺口：
+
+- 还没有评估是否需要再补一条 `cartographer` 对照线
+
 ### 阶段 E：`robot_sim_demo` 仿真底座
 
 目标：给导航和 SLAM 提供 Linux ROS2 下的仿真底座。
@@ -178,6 +272,47 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - 机器人能生成 `/tf`、`/odom`、`/scan`
 - 能接受 `/cmd_vel`
 - 能为 Nav2 和 `slam_toolbox` 提供稳定输入
+
+当前状态（2026-04-29）：
+
+- 已先落地 `ros2_ws/src/robot_sim_demo_ros2` 作为最小仿真底座
+- 控制链默认已切到 `ros2_control + twist_mux`：
+  - `sim_bringup.launch.py` 默认拉起 `ros2_control_node`、`ros2_control_runner`、`twist_mux`
+  - `diff_drive_base_controller` 负责底盘速度输入与 `/odom`
+  - `cmd_vel_teleop` 和 `cmd_vel_nav_smoothed` 会在 mux 内汇总后输出到底盘控制器
+- `simple_base_sim.py` 仍保留为回退路径，可通过 `use_ros2_control:=false` 启动
+- 已打通新版 Gazebo / `ros_gz` 路径：
+  - Gazebo 模式下改用 `wheel_velocity_controller`
+  - `gazebo_interface_bridge.py` 负责 `/cmd_vel -> 左右轮速度命令`
+  - `joint_states -> /odom + /tf` 里程计链路由桥接节点统一生成
+- `fake_laser.py` 继续负责合成 `/scan`
+  - Gazebo 路径下已改为不跟随 sim-time timer，避免 `/scan` 不稳定导致 Nav2 无法推进
+- 这套最小底座已经被 `navigation_sim_demo_ros2` 和 `slam_sim_demo_ros2` 共用
+- 已验证：
+  - `pixi run robot-sim-demo-headless` 下 `ros2_control` 控制器可成功激活，`/cmd_vel_teleop -> /odom` 链路正常
+  - `pixi run robot-sim-demo-gazebo-headless` 下 `ros_gz + ros2_control + wheel_velocity_controller + 自定义 bridge` 可正常工作
+  - Gazebo 路径保持 `/cmd_vel`、`/odom`、`/scan`、`/tf` 接口契约不变
+  - `pixi run nav2-demo-headless + pixi run nav2-goal-check` 在默认 `ros2_control` 路径下通过，输出 `navigation-motion-detected`
+  - `pixi run nav2-demo-gazebo-headless + pixi run nav2-goal-check-gazebo` 在 Gazebo 路径下通过，输出 `navigation-motion-detected`
+  - `pixi run slam-demo-headless + pixi run slam-map-check` 在默认 `ros2_control` 路径下通过，输出 `slam-map-updated`
+  - `pixi run slam-demo-gazebo-headless + pixi run slam-map-check-gazebo` 在 Gazebo 路径下通过，输出 `slam-map-updated`
+  - `pixi run slam-save-reload-check` 在同一路径下通过，输出 `slam-map-saved-and-reloaded`
+  - `pixi run slam-demo-gazebo-headless + pixi run slam-save-reload-check-gazebo` 在 Gazebo 路径下通过，输出 `slam-map-saved-and-reloaded`
+- 当前 `Ctrl-C` 退出路径也已修正，不再因为重复 `rclpy.shutdown()` 在 launch 收尾时报错
+- Gazebo GUI 资源路径问题已修正，机器人模型可正常显示
+- 已补单独的地板诊断入口 `pixi run robot-sim-ground-test`
+  - 只加载 `ISCAS_groundplane`，用于隔离排查地板纹理 / 材质问题
+- 当前 Gazebo 场景约定已拆分：
+  - GUI 演示默认使用 `museum.sdf`
+  - headless 回归固定使用 `empty.sdf`
+  - museum GUI 的机器人出生位姿单独覆盖为 `spawn_x:=5.0 spawn_y:=0.0 spawn_yaw:=-2.0`
+- `museum.sdf` 当前保留了一层 floor overlay 作为兼容修复，确保馆内地板纹理在 Gazebo GUI 下可见
+- Gazebo GUI 仍可能打印 `IgnGazebo` QML panel 相关报错；当前判断为界面插件缺失，不阻塞仿真与控制链
+
+后续收口范围：
+
+- 保留当前 `ros2_control + twist_mux` 默认接口契约
+- 基于同一接口继续补 Gazebo 路径下更完整的回归与教学说明
 
 ## 风险控制
 
@@ -207,6 +342,13 @@ Linux 二阶段主线完成的最低验收标准：
 3. 每个迁移包至少有一条可复现 demo 路径
 4. 每个迁移包至少有一个 smoke test 或 launch test
 5. 不再依赖 ROS1 运行时
+6. 触及 `robot_sim_demo_ros2`、`navigation_sim_demo_ros2`、`slam_sim_demo_ros2` 主链路的改动，需通过 `pixi run phase2-acceptance`
+
+当前固定验收命令（2026-04-29）：
+
+- `pixi run phase2-acceptance`
+- 目前等价于 `pixi run gazebo-regression`
+- 这条命令串行覆盖 Gazebo headless 下的 robot sim、Nav2、SLAM 主线回归
 
 ## 建议里程碑
 

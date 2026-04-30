@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="xbot_ros2_control"
+    params="use_gazebo:=false controller_manager_config:='' diff_drive_controller_config:=''">
+    <xacro:property name="gazebo_enabled" value="${use_gazebo == True or use_gazebo == 'true' or use_gazebo == 'True' or use_gazebo == 1 or use_gazebo == '1'}"/>
+    <ros2_control name="xbot_system" type="system">
+      <hardware>
+        <xacro:if value="${gazebo_enabled}">
+          <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${gazebo_enabled}">
+          <plugin>mock_components/GenericSystem</plugin>
+          <param name="calculate_dynamics">true</param>
+        </xacro:unless>
+      </hardware>
+
+      <joint name="left_wheel_hinge">
+        <command_interface name="velocity">
+          <param name="min">-20.0</param>
+          <param name="max">20.0</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="right_wheel_hinge">
+        <command_interface name="velocity">
+          <param name="min">-20.0</param>
+          <param name="max">20.0</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="base_to_yaw_platform">
+        <command_interface name="position"/>
+        <state_interface name="position"/>
+      </joint>
+
+      <joint name="yaw_to_pitch_platform">
+        <command_interface name="position"/>
+        <state_interface name="position"/>
+      </joint>
+    </ros2_control>
+
+    <xacro:if value="${gazebo_enabled}">
+      <gazebo>
+        <plugin
+          filename="libgz_ros2_control-system.so"
+          name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+          <parameters>${controller_manager_config}</parameters>
+        </plugin>
+      </gazebo>
+    </xacro:if>
+  </xacro:macro>
+</robot>
