@@ -13,6 +13,7 @@ setup(
             "share/" + package_name + "/launch",
             [
                 "launch/slam_demo.launch.py",
+                "launch/slam_depth_demo.launch.py",
             ],
         ),
         (
