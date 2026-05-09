@@ -21,6 +21,13 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - 上游文档、依赖、教程最成熟
 - 后续如需切到 `Jazzy`，可以在 Linux 线稳定后再做
 
+补充说明（2026-05-09）：
+
+- 对 `riscv64` 板卡，不应假设存在与 `x86_64` 相同的二进制 ROS2 环境
+- 当前已经验证一条独立的“最小控制端”路线，可在 `riscv64` 上从源码构建 `rclpy + geometry_msgs + teleop_twist_keyboard`
+- 该路线不替代 Linux 二阶段主线，只服务于“异构设备通过局域网控制 x86 仿真”的目标
+- 细节见 `docs/ros2_riscv_control_endpoint.md`
+
 ## 二阶段主线范围
 
 下面这些包进入 Linux 二阶段主线：
@@ -109,6 +116,12 @@ Windows + Pixi 已经完成第一阶段基础迁移，当前目标切换为：
 - `pixi run build` 已通过，当前 `ros2_ws/` 的 16 个 ROS2 包全部构建成功
 - `pixi run test` 已通过，现有 Python smoke tests 在 Linux 下可正常执行
 - `pixi run test-result` 仍显示 `0 tests`，这是当前 `unittest + console_direct` 输出方式导致的统计限制，不作为 gate
+
+补充状态（2026-05-09）：
+
+- 已额外验证一条 `riscv64` 最小控制端路线
+- 当前不要求在 `riscv64` 上复现 `pixi + RoboStack + Gazebo + Nav2`
+- 当前只要求在 `riscv64` 上提供 ROS2 最小 Python 控制端，并通过局域网接入 `x86_64` 主机上的仿真图
 
 ### 阶段 B：`tf_follower`
 
@@ -368,3 +381,9 @@ Linux 二阶段主线完成的最低验收标准：
 
 - `robot_sim_demo` 新仿真底座完成
 - 再决定是否开启 `RTAB-Map` 或 `ORB-SLAM3` 可选线
+
+### M4
+
+- `riscv64` 最小控制端整理成独立部署文档
+- 完成 `riscv64 -> x86_64` 局域网 teleop 联调
+- 让板子上的 `/cmd_vel_teleop` 可以直接驱动 x86 仿真机器人
